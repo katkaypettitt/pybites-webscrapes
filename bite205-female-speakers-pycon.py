@@ -5,15 +5,20 @@ from bs4 import BeautifulSoup as Soup
 import requests
 import re
 
-# from urllib.request import urlretrieve
-# from pathlib import Path
+# To use the commented out code:
+# https://stackoverflow.com/questions/27835619/urllib-and-ssl-certificate-verify-failed-error/49953629#49953629
+
 # TMP = Path('/tmp')
 # PYCON_HTML = TMP / "pycon2019.html"
 # PYCON_PAGE = ('https://bites-data.s3.us-east-2.amazonaws.com/'
 #               'pycon2019.html')
-#
+
 # if not PYCON_HTML.exists():
 #     urlretrieve(PYCON_PAGE, PYCON_HTML)
+
+
+# def _get_soup(html=PYCON_HTML):
+#     return Soup(html.read_text(encoding="utf-8"), "html.parser")
 
 PYCON_HTML = 'https://bites-data.s3.us-east-2.amazonaws.com/pycon2019.html'
 
