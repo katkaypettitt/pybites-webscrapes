@@ -1,13 +1,22 @@
+from datetime import datetime
 from collections import namedtuple
 from time import mktime
 from feedparser import parse
-from datetime import datetime
 import re
-
 
 FEED = 'https://bites-data.s3.us-east-2.amazonaws.com/all.rss.xml'
 
 Entry = namedtuple('Entry', 'date title link tags')
+
+
+class AttrDict(dict):
+    """feedparser lets you access dict keys as attributes, hence a bit of
+       mocking, got this from https://stackoverflow.com/a/14620633.
+       PyBites uses this class for parsing"""
+
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
 
 def _convert_struct_time_to_dt(stime):
@@ -24,17 +33,37 @@ def _convert_struct_time_to_dt(stime):
         return datetime.fromtimestamp(mktime(stime)).date()
 
 
+'''
+OFFICIAL SOLUTION: 
+return date(year=stime.tm_year, month=stime.tm_mon, day=stime.tm_mday)
+'''
+
+
 def get_feed_entries(feed=FEED):
     """Use feedparser to parse PyBites RSS feed.
        Return a list of Entry namedtuples (date = date, drop time part)
     """
-    file = parse(feed)
+    if type(feed) == AttrDict:
+        file = feed
+    else:
+        file = parse(feed)
     output = []
     for entry in file.entries:
         date = _convert_struct_time_to_dt(entry.published)
-        tag_list = [tag['term'] for tag in entry.tags]
+        tag_list = [tag['term'].lower() for tag in entry.tags]
         output.append(Entry(date, entry.title, entry.link, tag_list))
     return output
+
+
+'''
+OFFICIAL SOLUTION:
+    for entry in feedparser.parse(feed)['entries']:
+        dt = _convert_struct_time_to_dt(entry.published_parsed)
+        yield Entry(date=dt,
+                    title=entry.title,
+                    link=entry.link,
+                    tags={tag.term.lower() for tag in entry.tags})
+'''
 
 
 def filter_entries_by_tag(search, entry):
@@ -61,6 +90,20 @@ def filter_entries_by_tag(search, entry):
     return search
 
 
+'''
+OFFICIAL SOLUTION:
+    if '&' in search:
+        return all(term.strip().lower() in entry.tags
+                   for term in search.split('&'))
+
+    elif '|' in search:
+        return any(term.strip().lower() in entry.tags
+                   for term in search.split('|'))
+
+    return search.lower() in entry.tags
+'''
+
+
 def main():
     """Entry point to the program
        1. Call get_feed_entries and store them in entries
@@ -75,10 +118,11 @@ def main():
     """
     entries = get_feed_entries()
     while True:
-        try: 
-            search_term = input('Search for (q for exit): ')
+        try:
+            search_term = input('Search for (q for exit): ').lower()
         except EOFError:
             break
+
         if search_term == '':
             print('Please provide a search term')
 
@@ -87,25 +131,52 @@ def main():
             for entry in entries:
                 if filter_entries_by_tag(search_term, entry):
                     output_list.append(entry)
-
             output_list = sorted(output_list, key=lambda x: x.date)
 
-            output_number = len(output_list)
-            if output_number == 1:
-                output_message = f'{output_number} entry matched "{search_term}"'
-            if output_number == 0 or output_number > 1:
-                output_message = f'{output_number} entries matched "{search_term}"'
+            titles = [entry.title for entry in output_list]
 
-            print(output_list)
-            print(output_message)
+            output_number = len(output_list)
+            if output_number < 1:
+                print(f'{output_number} entries matched')
+            if output_number == 1:
+                for title in titles:
+                    print(title)
+                print(f'{output_number} entry matched')
+            if output_number > 1:
+                for title in titles:
+                    print(title)
+                print(f'{output_number} entries matched')
 
         if search_term == 'q':
             print('Bye')
             break
 
 
+'''
+OFFICIAL SOLUTION:
+    entries = sorted(get_feed_entries(), key=lambda x: x.date)
+
+    while True:
+        search = input('\nSearch for (q for exit): ')
+
+        if not search:
+            print('Please provide a search term')
+            continue
+
+        if search == 'q':
+            print('Bye')
+            break
+
+        matches = 0
+        for entry in entries:
+            if filter_entries_by_tag(search, entry):
+                matches += 1
+                print(entry.title)
+
+        entry_str = matches == 1 and "entry" or "entries"
+        print(f'\n{matches} {entry_str} matched "{search}"')
+'''
+
+
 if __name__ == '__main__':
     main()
-
-
-main()
