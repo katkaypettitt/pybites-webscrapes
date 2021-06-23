@@ -1,5 +1,7 @@
 from pathlib import Path
 from urllib.request import urlretrieve
+from dataclasses import dataclass, field
+from functools import total_ordering
 
 from bs4 import BeautifulSoup as Soup
 
@@ -12,22 +14,25 @@ HTML_FILE = Path(html_file)
 URL = ("https://bites-data.s3.us-east-2.amazonaws.com/"
        "minecraft-enchantment.html")
 
-
+@dataclass
+@total_ordering
 class Enchantment:
     """Minecraft enchantment class
 
     Implements the following:
         id_name, name, max_level, description, items
     """
-    def __int__(self, id_name, name, max_level, description, items):
-        self.id_name = id_name
-        self.name = name
-        self.max_level = max_level
-        self.description = description
-        self.items = items
+    id_name: str
+    name: str
+    max_level: int
+    description: str
+    items: List[str] = field(default_factory=list)
 
     def __str__(self):
-        return f'{self.name.title()} ({self.max_level}): {self.description}'
+        return f"{self.name} ({self.max_level}): {self.description}"
+
+    def __lt__(self, other):
+        return self.id_name < other.id_name
 
 
 class Item:
@@ -78,10 +83,6 @@ def generate_enchantments(soup):
             version_list.append(row.get_text())
         row_number += 1
 
-    # TODO: make enchantment class
-    # TODO: finish this function 
-
-
 
 def generate_items(data):
     """Generates a dictionary of Item objects
@@ -118,85 +119,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-Armor: 
-  [1] binding_curse
-  [4] blast_protection
-  [4] fire_protection
-  [4] projectile_protection
-  [4] protection
-  [3] thorns 
-
-Axe: 
-  [5] bane_of_arthropods
-  [5] efficiency
-  [3] fortune
-  [5] sharpness
-  [1] silk_touch
-  [5] smite 
-
-Boots: 
-  [3] depth_strider
-  [4] feather_falling
-  [2] frost_walker 
-
-Bow: 
-  [1] flame
-  [1] infinity
-  [5] power
-  [2] punch 
-
-Chestplate: 
-  [1] mending
-  [3] unbreaking
-  [1] vanishing_curse 
-
-Crossbow: 
-  [1] multishot
-  [4] piercing
-  [3] quick_charge 
-
-Fishing Rod: 
-  [3] luck_of_the_sea
-  [3] lure
-  [1] mending
-  [3] unbreaking
-  [1] vanishing_curse 
-
-Helmet: 
-  [1] aqua_affinity
-  [3] respiration 
-
-Pickaxe: 
-  [5] efficiency
-  [3] fortune
-  [1] mending
-  [1] silk_touch
-  [3] unbreaking
-  [1] vanishing_curse 
-
-Shovel: 
-  [5] efficiency
-  [3] fortune
-  [1] silk_touch 
-
-Sword: 
-  [5] bane_of_arthropods
-  [2] fire_aspect
-  [2] knockback
-  [3] looting
-  [1] mending
-  [5] sharpness
-  [5] smite
-  [3] sweeping
-  [3] unbreaking
-  [1] vanishing_curse 
-
-Trident: 
-  [1] channeling
-  [5] impaling
-  [3] loyalty
-  [3] riptide
-"""
-
