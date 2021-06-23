@@ -34,18 +34,20 @@ class Enchantment:
     def __lt__(self, other):
         return self.id_name < other.id_name
 
-
+@dataclass
 class Item:
     """Minecraft enchantable item class
 
     Implements the following:
         name, enchantments
     """
-    def __int__(self, name):
-        self.name = name
+    name: str
+    enchantments: List[Enchantment] = field(default_factory=list)
 
     def __str__(self):
-        return Enchantment(self.name)
+        enchants = sorted(self.enchantments)
+        enc_list = [f"\n  [{enc.max_level}] {enc.id_name}" for enc in enchants]
+        return f"{self.name.title()}: {''.join(enc_list)}"
 
 
 def generate_enchantments(soup):
