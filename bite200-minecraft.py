@@ -36,7 +36,11 @@ class Item:
     Implements the following:
         name, enchantments
     """
-    pass
+    def __int__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return Enchantment(self.name)
 
 
 def generate_enchantments(soup):
