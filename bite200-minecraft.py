@@ -19,8 +19,15 @@ class Enchantment:
     Implements the following:
         id_name, name, max_level, description, items
     """
+    def __int__(self, id_name, name, max_level, description, items):
+        self.id_name = id_name
+        self.name = name
+        self.max_level = max_level
+        self.description = description
+        self.items = items
 
-    pass
+    def __str__(self):
+        return f'{self.name.title()} ({self.max_level}): {self.description}'
 
 
 class Item:
