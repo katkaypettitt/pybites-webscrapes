@@ -1,7 +1,10 @@
-from pathlib import Path
-from urllib.request import urlretrieve
+from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import total_ordering
+from pathlib import Path
+from re import compile, search
+from typing import Any, DefaultDict, List
+from urllib.request import urlretrieve
 
 from bs4 import BeautifulSoup as Soup
 
@@ -13,6 +16,9 @@ HTML_FILE = Path(html_file)
 # https://www.digminecraft.com/lists/enchantment_list_pc.php
 URL = ("https://bites-data.s3.us-east-2.amazonaws.com/"
        "minecraft-enchantment.html")
+
+
+#################### CLASSES ####################
 
 @dataclass
 @total_ordering
@@ -48,8 +54,24 @@ class Item:
         enchants = sorted(self.enchantments)
         enc_list = [f"\n  [{enc.max_level}] {enc.id_name}" for enc in enchants]
         return f"{self.name.title()}: {''.join(enc_list)}"
+       
+       
+ #################### FUNCTIONS ####################
 
+def get_soup(file=HTML_FILE):
+    """Retrieves/takes source HTML and returns a BeautifulSoup object"""
+    if isinstance(file, Path):
+        if not HTML_FILE.is_file():
+            urlretrieve(URL, HTML_FILE)
 
+        with file.open() as html_source:
+            soup = Soup(html_source, "html.parser")
+    else:
+        soup = Soup(file, "html.parser")
+
+    return soup
+
+# TODO: Finish this function
 def generate_enchantments(soup):
     """Generates a dictionary of Enchantment objects
 
@@ -86,6 +108,7 @@ def generate_enchantments(soup):
         row_number += 1
 
 
+# TODO: Finish this function
 def generate_items(data):
     """Generates a dictionary of Item objects
 
@@ -94,19 +117,87 @@ def generate_items(data):
     pass
 
 
-def get_soup(file=HTML_FILE):
-    """Retrieves/takes source HTML and returns a BeautifulSoup object"""
-    if isinstance(file, Path):
-        if not HTML_FILE.is_file():
-            urlretrieve(URL, HTML_FILE)
+#################### HELPER FUNCTIONS ####################
 
-        with file.open() as html_source:
-            soup = Soup(html_source, "html.parser")
-    else:
-        soup = Soup(file, "html.parser")
+def parse_html(soup):
+    """Parses BeautifulSoup object and returns the table
 
-    return soup
+    :param soup: BeautifulSoup object
+    :return: List of the rows that make up the table
+    """
+    table = soup.find("table", {"id": "minecraft_items"})
+    data = [
+        [td.get_text() for td in row.find_all("td")] for row in table.find_all("tr")
+    ]
 
+    return data[1:]
+
+
+def gen_item_set(data):
+    """Returns a set of item names
+
+    :param data: Dictionary of Enchantment objects
+    :return: Set of sorted item object name strings
+    """
+    mc_items = set()
+    for enchantment in data.keys():
+        for item in data[enchantment].items:
+            mc_items.add(item)
+
+    return sorted(mc_items)
+
+
+def split_title(title):
+    """
+    Splits the title string
+
+    :param title: String of the enchantment title
+    :return: Tuple(id_names, names)
+    """
+    pattern = compile(r"(.*)\((.*)\)")
+    names, id_names = search(pattern, title).groups()
+    return id_names, names
+
+
+def clean_up_names(item_names):
+    """Cleans up item names
+
+    :param item_names: String of item names
+    :return: String of cleaned up item names
+    """
+    unwanted = (".png", "_sm", "iron_", "enchanted_")
+
+    if "fishing_rod" in item_names:
+        item_names = item_names.replace("fishing_rod", "fishingrod")
+
+    for chars in unwanted:
+        if chars in item_names:
+            item_names = item_names.replace(chars, "")
+
+    item_names = item_names.split("_")
+    item_names = [
+        "fishing_rod" if item == "fishingrod" else item for item in item_names
+    ]
+
+    return " ".join(item_names)
+
+
+def enchantable_items(soup):
+    """Scrapes BeautifulSoup object for items
+
+    :param soup: BeautifulSoup object
+    :return: List of enchantable items lists
+    """
+    table = soup.find("table", {"id": "minecraft_items"})
+    items = [
+        clean_up_names(img["data-src"].split("/")[-1]).split()
+        for img in table.find_all("img")
+    ]
+
+    return items
+
+
+#################### MAIN FUNCTION ####################
 
 def main():
     """This function is here to help you test your final code.
@@ -115,6 +206,7 @@ def main():
     soup = get_soup()
     enchantment_data = generate_enchantments(soup)
     minecraft_items = generate_items(enchantment_data)
+    # TODO: Uncomment once generate item function is working
     # for item in minecraft_items:
     #     print(minecraft_items[item], "\n")
 
